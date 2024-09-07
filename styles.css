@@ -1,0 +1,22 @@
+body
+{
+	background-color: lightpink;
+	color: black;
+	font-size: 20px;
+}
+
+.bClass:active
+{
+    border-width: 3px;
+    filter: brightness(0.9);
+}
+
+#start-id
+{
+	font-size: 20px;
+}
+
+#canvas-id
+{
+	background-color : black;
+}
