@@ -8,6 +8,10 @@ var BUFFER_SIZE = canvas.width * canvas.height * 4;
 var RED_SIDE_SIZE = canvas.width / 2;
 var GREEN_SIDE_SIZE = canvas.width;
 /*-----PERSPECTIVE-----*/
+var yOffset = 0;
+var xOffset = 0;
+var zOffset = 0;
+var scaler = 2;
 var yGrid = 190;
 var MID_WIDTH = canvas.width / 2;
 var MID_HEIGHT = canvas.height / 2;
@@ -132,6 +136,36 @@ function make3Dgrid(SQUARE_SIZE)
 	}
 }
 
+function transformGrid()
+{
+	document.addEventListener('keydown', function(event){
+		if (event.key === "ArrowUp")
+		{
+			yOffset -= 20;
+		}
+		if (event.key === "ArrowDown")
+		{
+			yOffset += 20;
+		}
+		if (event.key === "ArrowLeft")
+		{
+			xOffset -= 20;
+		}
+		if (event.key === "ArrowRight")
+		{
+			xOffset += 20;
+		}	
+		if (event.key === "PageUp")
+		{
+			zOffset += 0.2;
+		}
+		if (event.key === "PageDown")
+		{
+			zOffset -= 0.2;
+		}
+	});
+}
+
 function create3Dgrid(SQUARE_SIZE)
 {
 	make3Dgrid(SQUARE_SIZE);
@@ -143,11 +177,11 @@ function create3Dgrid(SQUARE_SIZE)
 
 	for (i = 0; i < 66; i += 2)
 	{
-		x0 = Math.floor((grid3D[i].x / grid3D[i].z) + MID_WIDTH);
-		y0 = Math.floor((yGrid / grid3D[i].z) + MID_HEIGHT);
+		x0 = Math.floor(((grid3D[i].x + xOffset) / (grid3D[i].z + zOffset)) + MID_WIDTH);
+		y0 = Math.floor(((yGrid + yOffset) / (grid3D[i].z + zOffset)) + MID_HEIGHT);
 
-		x1 = Math.floor((grid3D[i + 1].x / grid3D[i + 1].z) + MID_WIDTH);
-		y1 = Math.floor((yGrid / grid3D[i + 1].z) + MID_HEIGHT);
+		x1 = Math.floor(((grid3D[i + 1].x + xOffset) / (grid3D[i + 1].z + zOffset)) + MID_WIDTH);
+		y1 = Math.floor(((yGrid + yOffset) / (grid3D[i + 1].z + zOffset)) + MID_HEIGHT);
 
 		if (x0 > 0 && x0 < canvas.width && y0 > 0 && y0 < canvas.height
 				&& x1 > 0 && x1 < canvas.width && y1 > 0 && y1 < canvas.height)
@@ -157,11 +191,15 @@ function create3Dgrid(SQUARE_SIZE)
 
 function gameLoop()
 {
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	imageData = context.createImageData(canvas.width, canvas.height);
+	colorBuffer = imageData.data;
 	//create2Dgrid(40);
-	create3Dgrid(60);
+	create3Dgrid(100);
 	context.putImageData(imageData, 0, 0);
 	requestAnimationFrame(gameLoop);
 }
 
 /*----------Main----------*/
+transformGrid();
 start.onclick = gameLoop;
