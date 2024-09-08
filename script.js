@@ -4,6 +4,7 @@ var canvas = document.getElementById("canvas-id");
 var context = canvas.getContext("2d");
 var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 var colorBuffer = imageData.data;
+var gridColorBuffer = new Uint8ClampedArray(canvas.width * canvas.height * 4);
 var BUFFER_SIZE = canvas.width * canvas.height * 4;
 var RED_SIDE_SIZE = canvas.width / 2;
 var GREEN_SIDE_SIZE = canvas.width;
@@ -11,47 +12,37 @@ var GREEN_SIDE_SIZE = canvas.width;
 var yOffset = 0;
 var xOffset = 0;
 var zOffset = 0;
+var xBall = 0;
+var zBall = 1.4;
+var xPadelPlayer = 0;
+var xPadelAntagonist = 0;
 var scaler = 2;
 var yGrid = 250;
 var MID_WIDTH = canvas.width / 2;
 var MID_HEIGHT = canvas.height / 2;
 var MID_DEPTH = (1 + 0.15 * 21) / 2;
 var grid3D = [];
-
+var padel3D = [];
+var ball3D = [];
+/*-----Limites Terrain-----*/
+var ZMAX = 1.3 + 0.2 * 21;
+var ZMIN = 1.3;
+var XMAX = 90 * 5;
+var XMIN = -90 * 5;
+/*-----Balle speed-----*/
+var xVelocity = 10;
+var zVelocity = 0.01;
 
 /*-----------Functions----------*/
-function putPixel(i, r, g, b, a)
+function putPixel(buffer, i, r, g, b, a)
 {	
-	colorBuffer[i] = r;
-	colorBuffer[i + 1] = g;
-	colorBuffer[i + 2] = b;
-	colorBuffer[i + 3] = a;
+	buffer[i] = r;
+	buffer[i + 1] = g;
+	buffer[i + 2] = b;
+	buffer[i + 3] = a;
 }
 
-function create2Dgrid(SQUARE_SIZE)
-{
-	for (z = 0; z < canvas.height; ++z)
-	{
-		if (z % SQUARE_SIZE == 0 || z == canvas.height - 1)
-		{	
-			for (x = 0; x < RED_SIDE_SIZE; ++x)
-				putPixel((z * canvas.width + x) * 4, 255, 0, 0, 255);
-			for (x = RED_SIDE_SIZE; x < canvas.width; ++x)
-				putPixel((z * canvas.width + x) * 4, 0, 255, 0, 255);
-			putPixel((z * canvas.width + x - 1) * 4, 0, 255, 0, 255);
-		}
-		else
-		{	
-			for (x = 0; x < RED_SIDE_SIZE; x += SQUARE_SIZE)
-				putPixel((z * canvas.width + x) * 4, 255, 0, 0, 255);
-			for (x = RED_SIDE_SIZE; x < canvas.width; x += SQUARE_SIZE)
-				putPixel((z * canvas.width + x) * 4, 0, 255, 0, 255);
-			putPixel((z * canvas.width + x - 1) * 4, 0, 255, 0, 255);
-		}
-	}
-}
-
-function drawLineDDA(x0, y0, x1, y1, r, g, b, a)
+function drawLineDDA(buffer, x0, y0, x1, y1, r, g, b, a)
 {
 	let dx = x1 - x0;
 	let dy = y1 - y0;
@@ -76,7 +67,7 @@ function drawLineDDA(x0, y0, x1, y1, r, g, b, a)
 		// Calculer l'index du pixel dans le color buffer
 		let index = (Math.round(y) * canvas.width + Math.round(x)) * 4;
 		// Dessiner le pixel
-		putPixel(index, r, g, b, a);
+		putPixel(buffer, index, r, g, b, a);
 		// Incrémenter les coordonnées
 		x += xIncrement;
 		y += yIncrement;
@@ -86,10 +77,6 @@ function drawLineDDA(x0, y0, x1, y1, r, g, b, a)
 
 function make3Dgrid(SQUARE_SIZE)
 {
-	let ZMAX = 1.3 + 0.2 * 21;
-	let ZMIN =  1.3;
-	let XMAX = SQUARE_SIZE * 5;
-	let XMIN = SQUARE_SIZE * -5;
 	let x = -5;
 	let z = ZMIN;
 
@@ -149,19 +136,29 @@ function transformGrid()
 		}
 		if (event.key === "ArrowLeft")
 		{
-			xOffset -= 20;
+			xPadelPlayer -= 25;
+			if (xPadelPlayer < XMIN)
+			{
+				xPadelPlayer = XMIN;
+				//console.log(xPadelPlayer);
+			}
 		}
 		if (event.key === "ArrowRight")
 		{
-			xOffset += 20;
-		}	
+			xPadelPlayer += 25;
+			if (xPadelPlayer > XMAX)
+			{
+				xPadelPlayer = XMAX;
+				//console.log(xPadelPlayer);
+			}
+		}
 		if (event.key === "PageUp")
 		{
-			zOffset += 0.1;
+			zBall += 0.1;
 		}
 		if (event.key === "PageDown")
 		{
-			zOffset -= 0.1;
+			zBall -= 0.1;
 		}
 	});
 }
@@ -169,7 +166,6 @@ function transformGrid()
 function create3Dgrid(SQUARE_SIZE)
 {
 	make3Dgrid(SQUARE_SIZE);
-	//console.log(grid3D);
 	let x0 = 0;
 	let y0 = 0;
 	let x1 = 0;
@@ -179,27 +175,155 @@ function create3Dgrid(SQUARE_SIZE)
 	{
 		x0 = Math.floor(((grid3D[i].x + xOffset) / (grid3D[i].z + zOffset)) + MID_WIDTH);
 		y0 = Math.floor(((yGrid + yOffset) / (grid3D[i].z + zOffset)) + MID_HEIGHT);
-
 		x1 = Math.floor(((grid3D[i + 1].x + xOffset) / (grid3D[i + 1].z + zOffset)) + MID_WIDTH);
 		y1 = Math.floor(((yGrid + yOffset) / (grid3D[i + 1].z + zOffset)) + MID_HEIGHT);
-
-		if (x0 > 0 && x0 < canvas.width && y0 > 0 && y0 < canvas.height
-				&& x1 > 0 && x1 < canvas.width && y1 > 0 && y1 < canvas.height)
-			drawLineDDA(x0, y0, x1, y1, 75, 0, 130, 255);
+		drawLineDDA(gridColorBuffer, x0, y0, x1, y1, 75, 0, 130, 255);
 	}
 }
+
+function create3Dball()
+{
+	ball3D.push({ x: -20, y: -20 + yGrid - 50, z: -0.05});
+	ball3D.push({ x: -20, y: 20 + yGrid - 50, z: -0.05});
+	ball3D.push({ x: 20, y: 20 + yGrid - 50, z: -0.05});
+	ball3D.push({ x: 20, y: -20 + yGrid - 50, z: -0.05});
+	ball3D.push({ x: -20, y: -20 + yGrid - 50, z: 0.05});
+	ball3D.push({ x: -20, y: 20 + yGrid - 50, z: 0.05});
+	ball3D.push({ x: 20, y: 20 + yGrid - 50, z: 0.05});
+	ball3D.push({ x: 20, y: -20 + yGrid - 50, z: 0.05});
+}
+
+function projectBallLine(i, j)
+{
+	let x0 = 0;
+	let y0 = 0;
+	let x1 = 0;
+	let y1 = 0;
+
+	x0 = Math.floor(((ball3D[i].x + xBall) / (ball3D[i].z + zBall)) + MID_WIDTH);
+	y0 = Math.floor((ball3D[i].y / (ball3D[i].z + zBall)) + MID_HEIGHT);	
+	x1 = Math.floor(((ball3D[j].x + xBall) / (ball3D[j].z + zBall)) + MID_WIDTH);
+	y1 = Math.floor((ball3D[j].y / (ball3D[j].z + zBall)) + MID_HEIGHT);
+	if (x0 > 0 && x0 < canvas.width && y0 > 0 && y0 < canvas.height
+			&& x1 > 0 && x1 < canvas.width && y1 > 0 && y1 < canvas.height)
+		if (zBall < ZMIN)
+			drawLineDDA(colorBuffer, x0, y0, x1, y1, 255, 0, 0, 255);
+		else
+			drawLineDDA(colorBuffer, x0, y0, x1, y1, 0, 255, 0, 255);
+}
+
+function drawBall(r, g, b)
+{
+	let x0 = 0;
+	let y0 = 0;
+	let x1 = 0;
+	let y1 = 0;
+
+	projectBallLine(0, 1);
+	projectBallLine(1, 2);
+	projectBallLine(2, 3);
+	projectBallLine(3, 0);
+
+	projectBallLine(4, 5);
+	projectBallLine(5, 6);
+	projectBallLine(6, 7);
+	projectBallLine(7, 4);
+	
+	projectBallLine(4, 0);
+	projectBallLine(5, 1);
+	projectBallLine(6, 2);
+	projectBallLine(7, 3);
+}
+
+function create3Dpadel()
+{
+	padel3D.push({ x: -50, y: yGrid - 40 });
+	padel3D.push({ x: 50, y: yGrid - 40 });
+	padel3D.push({ x: -50, y: yGrid - 20 });
+	padel3D.push({ x: 50, y: yGrid - 20 });
+}
+
+function projectPadelLine(buffer, i, j, z, r, g, b)
+{
+	let x0 = 0;
+	let y0 = 0;
+	let x1 = 0;
+	let y1 = 0;
+
+	x0 = Math.floor(((padel3D[i].x + xPadelPlayer) / z) + MID_WIDTH);
+	y0 = Math.floor((padel3D[i].y / z) + MID_HEIGHT);	
+	x1 = Math.floor(((padel3D[j].x + xPadelPlayer) / z) + MID_WIDTH);
+	y1 = Math.floor((padel3D[j].y / z) + MID_HEIGHT);
+	drawLineDDA(buffer, x0, y0, x1, y1, r, g, b, 255);
+}
+
+function drawPadel(z, r, g, b)
+{
+	let x0 = 0;
+	let y0 = 0;
+	let x1 = 0;
+	let y1 = 0;
+	//console.log(padel3D);
+	for (i = 0; i < 4; i += 2)
+		projectPadelLine(colorBuffer, i, i + 1, z, r, g, b);
+	projectPadelLine(colorBuffer, 0, 3, z, r, g, b);
+	projectPadelLine(colorBuffer, 1, 2, z, r, g, b);
+	projectPadelLine(colorBuffer, 0, 2, z, r, g, b);
+	projectPadelLine(colorBuffer, 1, 3, z, r, g, b);
+}
+
+function updateBallPosition() {
+    // Mettre à jour la position de la balle en fonction de sa vitesse
+    xBall += xVelocity;
+    zBall += zVelocity;
+
+    // Vérifier les limites du terrain sur l'axe X
+    if (xBall < XMIN || xBall > XMAX) {
+        // Inverser la direction sur X si on atteint les bords
+        xVelocity = -xVelocity;
+    }
+
+    // Vérifier les limites du terrain sur l'axe Z
+    if (zBall > ZMAX) {
+        // Inverser la direction sur Z si on atteint les bords arrière
+        zVelocity = -zVelocity;
+    }
+
+    // Collision avec le paddle joueur
+    if (zBall <= 1.4 && zBall >= ZMIN - 0.1) { // Ajuster cette condition pour détecter les collisions plus précisément
+        if (xBall > xPadelPlayer - 50 && xBall < xPadelPlayer + 50) {
+            // Inverser la direction sur Z si la balle touche le paddle
+            zVelocity = -zVelocity;
+
+            // Ajouter une légère variation dans la direction X en fonction de la position de collision sur le paddle
+            let hitPosition = (xBall - xPadelPlayer) / 50; // Normaliser la position entre -1 (gauche) et 1 (droite)
+            xVelocity += hitPosition * 0.05; // Ajuster l'inclinaison de la balle selon où elle touche le paddle
+        }
+    }
+
+    // Vérification si la balle sort du terrain (Z < ZMIN) — ajouter un reset si souhaité.
+}
+
 
 function gameLoop()
 {
 	context.clearRect(0, 0, canvas.width, canvas.height);
 	imageData = context.createImageData(canvas.width, canvas.height);
 	colorBuffer = imageData.data;
-	//create2Dgrid(40);
-	create3Dgrid(100);
+	colorBuffer.set(gridColorBuffer);
+	//TODO : mise jours des coordonnes du padel.
+	//TODO : mise a jours des coordonee de la balle.
+	updateBallPosition();
+	//TODO : dessin du padel antagoniste.
+	drawBall();
+	drawPadel(1.3, 0, 255, 0);
 	context.putImageData(imageData, 0, 0);
 	requestAnimationFrame(gameLoop);
 }
 
 /*----------Main----------*/
+create3Dgrid(90);
+create3Dpadel();
+create3Dball();
 transformGrid();
 start.onclick = gameLoop;
