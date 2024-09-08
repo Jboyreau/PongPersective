@@ -12,7 +12,7 @@ var yOffset = 0;
 var xOffset = 0;
 var zOffset = 0;
 var scaler = 2;
-var yGrid = 190;
+var yGrid = 250;
 var MID_WIDTH = canvas.width / 2;
 var MID_HEIGHT = canvas.height / 2;
 var MID_DEPTH = (1 + 0.15 * 21) / 2;
@@ -86,11 +86,11 @@ function drawLineDDA(x0, y0, x1, y1, r, g, b, a)
 
 function make3Dgrid(SQUARE_SIZE)
 {
-	let ZMAX = 1 + 0.15 * 21;
-	let ZMIN =  1;
-	let XMAX = SQUARE_SIZE * 4;
-	let XMIN = SQUARE_SIZE * -6;
-	let x = -6;
+	let ZMAX = 1.3 + 0.2 * 21;
+	let ZMIN =  1.3;
+	let XMAX = SQUARE_SIZE * 5;
+	let XMIN = SQUARE_SIZE * -5;
+	let x = -5;
 	let z = ZMIN;
 
 	for (i = 0; i < 22; ++i)
@@ -131,7 +131,7 @@ function make3Dgrid(SQUARE_SIZE)
 				x: XMAX
 			};
 			grid3D.push(coord);
-			z += 0.15;
+			z += 0.2;
 		}
 	}
 }
@@ -157,11 +157,11 @@ function transformGrid()
 		}	
 		if (event.key === "PageUp")
 		{
-			zOffset += 0.2;
+			zOffset += 0.1;
 		}
 		if (event.key === "PageDown")
 		{
-			zOffset -= 0.2;
+			zOffset -= 0.1;
 		}
 	});
 }
