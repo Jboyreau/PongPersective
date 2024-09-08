@@ -30,8 +30,8 @@ var ZMIN = 1.3;
 var XMAX = 90 * 5;
 var XMIN = -90 * 5;
 /*-----Balle speed-----*/
-var xVelocity = 10;
-var zVelocity = 0.01;
+var xVelocity = 4;
+var zVelocity = 0.04;
 
 /*-----------Functions----------*/
 function putPixel(buffer, i, r, g, b, a)
@@ -284,20 +284,14 @@ function updateBallPosition() {
     }
 
     // Vérifier les limites du terrain sur l'axe Z
-    if (zBall > ZMAX) {
+    if (zBall >= ZMAX || zBall <= ZMIN) {
         // Inverser la direction sur Z si on atteint les bords arrière
         zVelocity = -zVelocity;
     }
-
-    // Collision avec le paddle joueur
-    if (zBall <= 1.4 && zBall >= ZMIN - 0.1) { // Ajuster cette condition pour détecter les collisions plus précisément
-        if (xBall > xPadelPlayer - 50 && xBall < xPadelPlayer + 50) {
+    else if (zBall <= 1.5 && zBall >= ZMIN && zVelocity < 0) { // Collision avec le paddle joueur
+        if ((xBall > xPadelPlayer - 50 || xBall + 20 > xPadelPlayer - 50) && (xBall < xPadelPlayer + 50 || xBall - 20 < xPadelPlayer + 50)) {
             // Inverser la direction sur Z si la balle touche le paddle
             zVelocity = -zVelocity;
-
-            // Ajouter une légère variation dans la direction X en fonction de la position de collision sur le paddle
-            let hitPosition = (xBall - xPadelPlayer) / 50; // Normaliser la position entre -1 (gauche) et 1 (droite)
-            xVelocity += hitPosition * 0.05; // Ajuster l'inclinaison de la balle selon où elle touche le paddle
         }
     }
 
