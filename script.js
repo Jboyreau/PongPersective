@@ -186,7 +186,7 @@ function projectBallLine(i, j)
 		if (zBall < ZMIN + 1)
 			drawLineDDA(colorBuffer, x0, y0, x1, y1, 255, 0, 0, 255);
 		else
-			drawLineDDA(colorBuffer, x0, y0, x1, y1, 0, 255, 0, 255);
+			drawLineDDA(colorBuffer, x0, y0, x1, y1, 255, 255, 255, 255);
 }
 
 function rotateY(model, rad) {
@@ -205,7 +205,7 @@ function rotateY(model, rad) {
     }
 }
 
-function drawBall(r, g, b)
+function drawBall()
 {
 	let x0 = 0;
 	let y0 = 0;
@@ -258,11 +258,7 @@ function projectPadelLine(buffer, i, j, z, r, g, b)
 
 function drawPadel(z, r, g, b)
 {
-	let x0 = 0;
-	let y0 = 0;
-	let x1 = 0;
-	let y1 = 0;
-	//console.log(padel3D);
+
 	for (i = 0; i < 4; i += 2)
 		projectPadelLine(colorBuffer, i, i + 1, z, r, g, b);
 	projectPadelLine(colorBuffer, 0, 3, z, r, g, b);
@@ -322,7 +318,7 @@ function gameLoop()
 	updateBallPosition();
 	//TODO : dessin du padel antagoniste.
 	drawBall();
-	drawPadel(2, 0, 255, 0);
+	drawPadel(2, 255, 255, 255);
 	context.putImageData(imageData, 0, 0);
 	requestAnimationFrame(gameLoop);
 }
