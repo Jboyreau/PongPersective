@@ -9,14 +9,17 @@ var BUFFER_SIZE = canvas.width * canvas.height * 4;
 var RED_SIDE_SIZE = canvas.width / 2;
 var GREEN_SIDE_SIZE = canvas.width;
 /*-----PERSPECTIVE-----*/
+var yGridOffset = 4.2;
+var zGridOffset = 6;
+var globaleScale = 310;
 var yOffset = 0;
 var xOffset = 0;
 var zOffset = 0;
 var xBall = 0;
-var zBall = 1.4;
+var zBall = 2;
+var ballScaler = 1; //experimental.
 var xPadelPlayer = 0;
 var xPadelAntagonist = 0;
-var scaler = 2;
 var yGrid = 250;
 var MID_WIDTH = canvas.width / 2;
 var MID_HEIGHT = canvas.height / 2;
@@ -25,13 +28,13 @@ var grid3D = [];
 var padel3D = [];
 var ball3D = [];
 /*-----Limites Terrain-----*/
-var ZMAX = 1.3 + 0.2 * 21;
-var ZMIN = 1.3;
-var XMAX = 90 * 5;
-var XMIN = -90 * 5;
+var ZMAX = 22;
+var ZMIN = 1;
+var XMAX = 7;
+var XMIN = -7;
 /*-----Balle speed-----*/
-var xVelocity = 4;
-var zVelocity = 0.04;
+var xVelocity = 0.09;
+var zVelocity = 0.09;
 
 /*-----------Functions----------*/
 function putPixel(buffer, i, r, g, b, a)
@@ -75,18 +78,18 @@ function drawLineDDA(buffer, x0, y0, x1, y1, r, g, b, a)
 }
 
 
-function make3Dgrid(SQUARE_SIZE)
+function make3Dgrid()
 {
-	let x = -5;
+	let x = XMIN;
 	let z = ZMIN;
 
-	for (i = 0; i < 22; ++i)
+	for (i = 0; i < XMAX * 4 + 2; ++i)
 	{
 		if (i % 2 == 0)
 		{
 			let coord = {
 				z: ZMIN,
-				x: x * SQUARE_SIZE
+				x: x
 			};
 			grid3D.push(coord);
 		}
@@ -94,14 +97,14 @@ function make3Dgrid(SQUARE_SIZE)
 		{
 			let coord = {
 				z: ZMAX,
-				x: x * SQUARE_SIZE
+				x: x
 			};
 			grid3D.push(coord);
 			++x;
 		}
 	}
 	
-	for (i = 0; i < 44; ++i)
+	for (i = 0; i < ZMAX * 2; ++i)
 	{
 		if (i % 2 == 0)
 		{
@@ -118,7 +121,7 @@ function make3Dgrid(SQUARE_SIZE)
 				x: XMAX
 			};
 			grid3D.push(coord);
-			z += 0.2;
+			++z;
 		}
 	}
 }
@@ -126,6 +129,14 @@ function make3Dgrid(SQUARE_SIZE)
 function transformGrid()
 {
 	document.addEventListener('keydown', function(event){
+		if (event.key === "+")
+		{
+			ballScaler += 30;
+		}
+		if (event.key === "-")
+		{
+			ballScaler -= 30;
+		}
 		if (event.key === "ArrowUp")
 		{
 			yOffset -= 20;
@@ -136,7 +147,7 @@ function transformGrid()
 		}
 		if (event.key === "ArrowLeft")
 		{
-			xPadelPlayer -= 25;
+			xPadelPlayer -= 0.2;
 			if (xPadelPlayer < XMIN)
 			{
 				xPadelPlayer = XMIN;
@@ -145,7 +156,7 @@ function transformGrid()
 		}
 		if (event.key === "ArrowRight")
 		{
-			xPadelPlayer += 25;
+			xPadelPlayer += 0.2;
 			if (xPadelPlayer > XMAX)
 			{
 				xPadelPlayer = XMAX;
@@ -154,62 +165,90 @@ function transformGrid()
 		}
 		if (event.key === "PageUp")
 		{
-			zBall += 0.1;
+			zBall += 1;
 		}
 		if (event.key === "PageDown")
 		{
-			zBall -= 0.1;
+			zBall -= 1;
 		}
 	});
 }
 
-function create3Dgrid(SQUARE_SIZE)
+function create3Dgrid()
 {
-	make3Dgrid(SQUARE_SIZE);
+	make3Dgrid();
 	let x0 = 0;
 	let y0 = 0;
 	let x1 = 0;
 	let y1 = 0;
+	let x = 0;
+	let y = 0;
 
-	for (i = 0; i < 66; i += 2)
+	for (i = 0; i < ZMAX * 2 + XMAX * 4 + 1; i += 2)
 	{
-		x0 = Math.floor(((grid3D[i].x + xOffset) / (grid3D[i].z + zOffset)) + MID_WIDTH);
-		y0 = Math.floor(((yGrid + yOffset) / (grid3D[i].z + zOffset)) + MID_HEIGHT);
-		x1 = Math.floor(((grid3D[i + 1].x + xOffset) / (grid3D[i + 1].z + zOffset)) + MID_WIDTH);
-		y1 = Math.floor(((yGrid + yOffset) / (grid3D[i + 1].z + zOffset)) + MID_HEIGHT);
+		x = (grid3D[i].x / (grid3D[i].z + zGridOffset)) * globaleScale;
+		y = (yGridOffset / (grid3D[i].z + zGridOffset)) * globaleScale;
+		x0 = Math.floor(x + MID_WIDTH);
+		y0 = Math.floor(y + MID_HEIGHT);
+		x = (grid3D[i + 1].x / (grid3D[i + 1].z + zGridOffset)) * globaleScale;
+		y = (yGridOffset / (grid3D[i + 1].z + zGridOffset)) * globaleScale;
+		x1 = Math.floor(x + MID_WIDTH);
+		y1 = Math.floor(y + MID_HEIGHT);
 		drawLineDDA(gridColorBuffer, x0, y0, x1, y1, 75, 0, 130, 255);
 	}
 }
 
 function create3Dball()
 {
-	ball3D.push({ x: -20, y: -20 + yGrid - 50, z: -0.05});
-	ball3D.push({ x: -20, y: 20 + yGrid - 50, z: -0.05});
-	ball3D.push({ x: 20, y: 20 + yGrid - 50, z: -0.05});
-	ball3D.push({ x: 20, y: -20 + yGrid - 50, z: -0.05});
-	ball3D.push({ x: -20, y: -20 + yGrid - 50, z: 0.05});
-	ball3D.push({ x: -20, y: 20 + yGrid - 50, z: 0.05});
-	ball3D.push({ x: 20, y: 20 + yGrid - 50, z: 0.05});
-	ball3D.push({ x: 20, y: -20 + yGrid - 50, z: 0.05});
+	ball3D.push({ x: -0.15, y: -0.15, z: -0.15});
+	ball3D.push({ x: -0.15, y: 0.15, z: -0.15});
+	ball3D.push({ x: 0.15, y: 0.15, z: -0.15});
+	ball3D.push({ x: 0.15, y: -0.15, z: -0.15});
+	ball3D.push({ x: -0.15, y: -0.15, z: 0.15});
+	ball3D.push({ x: -0.15, y: 0.15, z: 0.15});
+	ball3D.push({ x: 0.15, y: 0.15, z: 0.15});
+	ball3D.push({ x: 0.15, y: -0.15, z: 0.15});
 }
 
 function projectBallLine(i, j)
 {
+	let x= 0;
+	let y = 0;
 	let x0 = 0;
 	let y0 = 0;
 	let x1 = 0;
 	let y1 = 0;
 
-	x0 = Math.floor(((ball3D[i].x + xBall) / (ball3D[i].z + zBall)) + MID_WIDTH);
-	y0 = Math.floor((ball3D[i].y / (ball3D[i].z + zBall)) + MID_HEIGHT);	
-	x1 = Math.floor(((ball3D[j].x + xBall) / (ball3D[j].z + zBall)) + MID_WIDTH);
-	y1 = Math.floor((ball3D[j].y / (ball3D[j].z + zBall)) + MID_HEIGHT);
+	x = ((ball3D[i].x + xBall) / (ball3D[i].z + zBall + zGridOffset)) * globaleScale;
+	y = ((ball3D[i].y + yGridOffset - 0.15) / (ball3D[i].z + zBall + zGridOffset)) * globaleScale;
+	x0 = Math.floor(x + MID_WIDTH);
+	y0 = Math.floor(y + MID_HEIGHT);
+	x = ((ball3D[j].x + xBall) / (ball3D[j].z + zBall + zGridOffset)) * globaleScale;
+	y = ((ball3D[j].y + yGridOffset - 0.15) / (ball3D[j].z + zBall + zGridOffset)) * globaleScale;
+	x1 = Math.floor(x + MID_WIDTH);
+	y1 = Math.floor(y + MID_HEIGHT);
 	if (x0 > 0 && x0 < canvas.width && y0 > 0 && y0 < canvas.height
 			&& x1 > 0 && x1 < canvas.width && y1 > 0 && y1 < canvas.height)
-		if (zBall < ZMIN)
+		if (zBall < ZMIN + 1)
 			drawLineDDA(colorBuffer, x0, y0, x1, y1, 255, 0, 0, 255);
 		else
 			drawLineDDA(colorBuffer, x0, y0, x1, y1, 0, 255, 0, 255);
+}
+
+function rotateY(model, rad) {
+    // Cosine et Sine de l'angle
+    let cosTheta = Math.cos(rad);
+    let sinTheta = Math.sin(rad);
+
+    // Parcourir chaque point du modèle
+    for (let i = 0; i < model.length; i++) {
+        let x = model[i].x;
+        let z = model[i].z;
+
+        // Appliquer la rotation
+        model[i].x = x * cosTheta - z * sinTheta;
+        model[i].z = x * sinTheta + z * cosTheta;
+    }
 }
 
 function drawBall(r, g, b)
@@ -218,7 +257,7 @@ function drawBall(r, g, b)
 	let y0 = 0;
 	let x1 = 0;
 	let y1 = 0;
-
+	rotateY(ball3D, 0.1);
 	projectBallLine(0, 1);
 	projectBallLine(1, 2);
 	projectBallLine(2, 3);
@@ -237,10 +276,10 @@ function drawBall(r, g, b)
 
 function create3Dpadel()
 {
-	padel3D.push({ x: -50, y: yGrid - 40 });
-	padel3D.push({ x: 50, y: yGrid - 40 });
-	padel3D.push({ x: -50, y: yGrid - 20 });
-	padel3D.push({ x: 50, y: yGrid - 20 });
+	padel3D.push({x: -1, y: 0.3});
+	padel3D.push({x: 1, y: 0.3});
+	padel3D.push({x: -1, y: - 0.3});
+	padel3D.push({x: 1, y: -0.3});
 }
 
 function projectPadelLine(buffer, i, j, z, r, g, b)
@@ -249,11 +288,17 @@ function projectPadelLine(buffer, i, j, z, r, g, b)
 	let y0 = 0;
 	let x1 = 0;
 	let y1 = 0;
+	let x = 0;
+	let y = 0;
 
-	x0 = Math.floor(((padel3D[i].x + xPadelPlayer) / z) + MID_WIDTH);
-	y0 = Math.floor((padel3D[i].y / z) + MID_HEIGHT);	
-	x1 = Math.floor(((padel3D[j].x + xPadelPlayer) / z) + MID_WIDTH);
-	y1 = Math.floor((padel3D[j].y / z) + MID_HEIGHT);
+	x = ((padel3D[i].x + xPadelPlayer) / (z + zGridOffset)) * globaleScale;
+	y = ((padel3D[i].y + yGridOffset - 0.3) / (z + zGridOffset)) * globaleScale;
+	x0 = Math.floor(x + MID_WIDTH);
+	y0 = Math.floor(y + MID_HEIGHT);
+	x = ((padel3D[j].x + xPadelPlayer) / (z + zGridOffset)) * globaleScale;
+	y = ((padel3D[j].y + yGridOffset - 0.3) / (z + zGridOffset)) * globaleScale;
+	x1 = Math.floor(x + MID_WIDTH);
+	y1 = Math.floor(y + MID_HEIGHT);
 	drawLineDDA(buffer, x0, y0, x1, y1, r, g, b, 255);
 }
 
@@ -284,12 +329,14 @@ function updateBallPosition() {
     }
 
     // Vérifier les limites du terrain sur l'axe Z
-    if (zBall >= ZMAX || zBall <= 0.1) {
+    if (zBall >= ZMAX || zBall <= ZMIN) {
         // Inverser la direction sur Z si on atteint les bords arrière
         zVelocity = -zVelocity;
     }
-    else if (zBall <= 1.5 && zBall >= ZMIN && zVelocity < 0) { // Collision avec le paddle joueur
-        if ((xBall > xPadelPlayer - 50 || xBall + 20 > xPadelPlayer - 50) && (xBall < xPadelPlayer + 50 || xBall - 20 < xPadelPlayer + 50)) {
+    else if (zBall <= 2 && zBall >= ZMIN && zVelocity < 0) { // Collision avec le paddle joueur
+        if ((xBall > xPadelPlayer - 1 || xBall + 0.15 > xPadelPlayer - 1)
+			&& (xBall < xPadelPlayer + 1 || xBall - 0.15 < xPadelPlayer + 1))
+		{
             // Inverser la direction sur Z si la balle touche le paddle
             zVelocity = -zVelocity;
         }
@@ -310,7 +357,7 @@ function gameLoop()
 	updateBallPosition();
 	//TODO : dessin du padel antagoniste.
 	drawBall();
-	drawPadel(1.3, 0, 255, 0);
+	drawPadel(2, 0, 255, 0);
 	context.putImageData(imageData, 0, 0);
 	requestAnimationFrame(gameLoop);
 }
