@@ -284,7 +284,7 @@ function updateBallPosition() {
     }
 
     // Vérifier les limites du terrain sur l'axe Z
-    if (zBall >= ZMAX || zBall <= ZMIN) {
+    if (zBall >= ZMAX || zBall <= 0.1) {
         // Inverser la direction sur Z si on atteint les bords arrière
         zVelocity = -zVelocity;
     }
