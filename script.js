@@ -35,6 +35,8 @@ var XMIN = -7;
 /*-----Balle speed-----*/
 var xVelocity = 0.09;
 var zVelocity = 0.09;
+/*-----Input-----*/
+var keysPressed = {};
 
 /*-----------Functions----------*/
 function putPixel(buffer, i, r, g, b, a)
@@ -124,54 +126,6 @@ function make3Dgrid()
 			++z;
 		}
 	}
-}
-
-function transformGrid()
-{
-	document.addEventListener('keydown', function(event){
-		if (event.key === "+")
-		{
-			ballScaler += 30;
-		}
-		if (event.key === "-")
-		{
-			ballScaler -= 30;
-		}
-		if (event.key === "ArrowUp")
-		{
-			yOffset -= 20;
-		}
-		if (event.key === "ArrowDown")
-		{
-			yOffset += 20;
-		}
-		if (event.key === "ArrowLeft")
-		{
-			xPadelPlayer -= 0.2;
-			if (xPadelPlayer < XMIN)
-			{
-				xPadelPlayer = XMIN;
-				//console.log(xPadelPlayer);
-			}
-		}
-		if (event.key === "ArrowRight")
-		{
-			xPadelPlayer += 0.2;
-			if (xPadelPlayer > XMAX)
-			{
-				xPadelPlayer = XMAX;
-				//console.log(xPadelPlayer);
-			}
-		}
-		if (event.key === "PageUp")
-		{
-			zBall += 1;
-		}
-		if (event.key === "PageDown")
-		{
-			zBall -= 1;
-		}
-	});
 }
 
 function create3Dgrid()
@@ -341,8 +295,20 @@ function updateBallPosition() {
             zVelocity = -zVelocity;
         }
     }
+}
 
-    // Vérification si la balle sort du terrain (Z < ZMIN) — ajouter un reset si souhaité.
+function updatePaddlePosition()
+{
+    if (keysPressed["ArrowLeft"])
+	{
+        xPadelPlayer -= 0.2;
+        if (xPadelPlayer < XMIN) xPadelPlayer = XMIN;
+    }
+    if (keysPressed["ArrowRight"])
+	{
+        xPadelPlayer += 0.2;
+        if (xPadelPlayer > XMAX) xPadelPlayer = XMAX;
+    }
 }
 
 
@@ -352,8 +318,7 @@ function gameLoop()
 	imageData = context.createImageData(canvas.width, canvas.height);
 	colorBuffer = imageData.data;
 	colorBuffer.set(gridColorBuffer);
-	//TODO : mise jours des coordonnes du padel.
-	//TODO : mise a jours des coordonee de la balle.
+	updatePaddlePosition()
 	updateBallPosition();
 	//TODO : dessin du padel antagoniste.
 	drawBall();
@@ -366,5 +331,12 @@ function gameLoop()
 create3Dgrid(90);
 create3Dpadel();
 create3Dball();
-transformGrid();
+// Événement keydown : ajouter la touche enfoncée
+document.addEventListener('keydown', function(event){
+    keysPressed[event.key] = true;
+});
+// Événement keyup : supprimer la touche lorsqu'elle est relâchée
+document.addEventListener('keyup', function(event) {
+    keysPressed[event.key] = false;
+})
 start.onclick = gameLoop;
