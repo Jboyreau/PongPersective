@@ -38,10 +38,13 @@ var ZMIN = 1;
 var XMAX = 7;
 var XMIN = -7;
 /*-----Balle speed-----*/
-var xVelocity = 0.09;
-var zVelocity = 0.15;
+var xVelocity = 0.01;
+var zVelocity = 0.2;
 /*-----Input-----*/
 var keysPressed = {};
+/*-----Score-----*/
+playerScore = 0;
+antagonistScore = 0;
 
 /*-----------Functions----------*/
 /*Display*/
@@ -311,7 +314,9 @@ function updateBallPosition()
     // Vérifier les limites du terrain sur l'axe Z
     if (zBall >= ZMAX || zBall <= ZMIN)
 	{
-        // Inverser la direction sur Z si on atteint les bords arrière
+        // Inverser la direction sur Z si on atteint les bords arrière	
+		playerScore += 1 * (zVelocity > 0);
+		antagonistScore += 1 * (zVelocity < 0);
         zVelocity = -zVelocity;
 		xVelocity /= 5;
     }
@@ -357,6 +362,18 @@ function updatePaddlePosition()
     }
 }
 
+function displayScore() {
+    // Définir la police et l'alignement pour le score
+    context.font = "20px 'Press Start 2P'";// "40px Arial"; 
+    context.fillStyle = "white"; // Couleur du texte
+
+    // Afficher le score du joueur à gauche
+    context.fillText("PLAYER : " + playerScore, MID_WIDTH - 300, 50); 
+
+    // Afficher le score de l'antagoniste à droite
+    context.fillText("ANTAGONIST : " + antagonistScore, MID_WIDTH + 50, 50);
+}
+
 /*Game loop*/
 function gameLoop()
 {
@@ -370,6 +387,7 @@ function gameLoop()
 	drawBall();
 	drawPadel(255, 255, 255);
 	context.putImageData(imageData, 0, 0);
+    displayScore();	
 	requestAnimationFrame(gameLoop);
 }
 
