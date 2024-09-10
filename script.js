@@ -34,7 +34,7 @@ var XMAX = 7;
 var XMIN = -7;
 /*-----Balle speed-----*/
 var xVelocity = 0.09;
-var zVelocity = 0.09;
+var zVelocity = 0.15;
 /*-----Input-----*/
 var keysPressed = {};
 
@@ -289,6 +289,12 @@ function updateBallPosition() {
 		{
             // Inverser la direction sur Z si la balle touche le paddle
             zVelocity = -zVelocity;
+            //if (xBall > xPadelPlayer)
+            	xVelocity = (xBall - xPadelPlayer) / 10;
+            //else
+            	//xVelocity = (xPadelPlayer - xBall) / 10;
+            
+            
         }
     }
 }
