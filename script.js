@@ -38,6 +38,7 @@ var ZMIN = 1;
 var XMAX = 7;
 var XMIN = -7;
 /*-----Balle speed-----*/
+var ballSpeed = 0.2;
 var xVelocity = 0.01;
 var zVelocity = 0.2;
 /*-----Input-----*/
@@ -45,6 +46,11 @@ var keysPressed = {};
 /*-----Score-----*/
 playerScore = 0;
 antagonistScore = 0;
+/*-----SYNC-----*/
+var lastTime = 0;
+var deltaTime = 0;
+var primeDeltaTime = 17;
+var skipFirstCall = 0;
 
 /*-----------Functions----------*/
 /*Display*/
@@ -292,7 +298,11 @@ function drawPadel(r, g, b)
 
 /*Position Update*/
 function updateBallPosition()
-{
+{	
+	if (zVelocity > 0)
+		zVelocity = ballSpeed * deltaTime;
+	else
+		zVelocity = -ballSpeed * deltaTime;
     // Mettre à jour la position de la balle en fonction de sa vitesse
     xBall += xVelocity;
 	if (xBall > XMAX)
@@ -328,7 +338,7 @@ function updateBallPosition()
             //Inverser la direction sur Z si la balle touche le paddle
             zVelocity = -zVelocity;
 			//Controle du rebond sur le padel
-            xVelocity = (xBall - xPadelPlayer) / 4;
+            xVelocity = ((xBall - xPadelPlayer) / 4) * deltaTime;
         }
     }
     if (zBall >= zAntagonist && zBall <= ZMAX && zVelocity > 0)//Collision avec l'Antagoniste
@@ -339,7 +349,7 @@ function updateBallPosition()
             //Inverser la direction sur Z si la balle touche le paddle
             zVelocity = -zVelocity;
 			//Controle du rebond sur le padel
-            xVelocity = (xBall - xAntagonist) / 2;
+            xVelocity = ((xBall - xAntagonist) / 2) * deltaTime;
         }
 	}
 }
@@ -347,17 +357,23 @@ function updateBallPosition()
 function updatePaddlePosition()
 {
 	if (xBall > xAntagonist)
-		xAntagonist += padelSpeed;
+	{
+		xAntagonist += padelSpeed * deltaTime;
+        if (xPadelPlayer < XMIN - 1) xPadelPlayer = XMIN - 1;
+	}
 	if (xBall < xAntagonist)
-		xAntagonist -= padelSpeed;
+	{
+		xAntagonist -= padelSpeed * deltaTime;
+        if (xPadelPlayer > XMAX + 1) xPadelPlayer = XMAX + 1;
+	}
     if (keysPressed["ArrowLeft"])
 	{
-        xPadelPlayer -= padelSpeed;
+        xPadelPlayer -= padelSpeed * deltaTime;
         if (xPadelPlayer < XMIN - 1) xPadelPlayer = XMIN - 1;
     }
     if (keysPressed["ArrowRight"])
 	{
-        xPadelPlayer += padelSpeed;
+        xPadelPlayer += padelSpeed * deltaTime;
         if (xPadelPlayer > XMAX + 1) xPadelPlayer = XMAX + 1;
     }
 }
@@ -375,8 +391,13 @@ function displayScore() {
 }
 
 /*Game loop*/
-function gameLoop()
+function gameLoop(currentTime)
 {
+	deltaTime = (currentTime - lastTime) / primeDeltaTime;
+	lastTime = currentTime;
+	console.log(deltaTime);
+	console.log("z " + zVelocity);
+	console.log("skip " + skipFirstCall);
 	context.clearRect(0, 0, canvas.width, canvas.height);
 	imageData = context.createImageData(canvas.width, canvas.height);
 	colorBuffer = imageData.data;
@@ -387,12 +408,22 @@ function gameLoop()
 	drawBall();
 	drawPadel(255, 255, 255);
 	context.putImageData(imageData, 0, 0);
-    displayScore();	
+	displayScore();	
 	requestAnimationFrame(gameLoop);
 }
 
+function initDeltaTime(currentTime)
+{
+	++skipFirstCall;
+	lastTime = currentTime;
+	if (skipFirstCall < 4)
+		requestAnimationFrame(initDeltaTime);
+	else
+		requestAnimationFrame(gameLoop);
+}
+
 /*----------Main----------*/
-create3Dgrid(90);
+create3Dgrid();
 create3Dpadel();
 create3Dball();
 // Événement keydown : ajouter la touche enfoncée
@@ -403,4 +434,4 @@ document.addEventListener('keydown', function(event){
 document.addEventListener('keyup', function(event) {
     keysPressed[event.key] = false;
 })
-start.onclick = gameLoop;
+start.onclick = initDeltaTime;
