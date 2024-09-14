@@ -11,7 +11,12 @@ body
     filter: brightness(0.9);
 }
 
-#start-id
+#bot-id
+{
+	font-size: 20px;
+}
+
+#pvp-id
 {
 	font-size: 20px;
 }

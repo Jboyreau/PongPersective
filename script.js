@@ -1,5 +1,6 @@
 /*-----2D-----*/
-var start = document.getElementById("start-id");
+var bot = document.getElementById("bot-id");
+var pvp = document.getElementById("pvp-id");
 var canvas = document.getElementById("canvas-id");
 var context = canvas.getContext("2d");
 var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -12,21 +13,23 @@ var GREEN_SIDE_SIZE = canvas.width;
 var yGridOffset = 4.2;
 var zGridOffset = 6;
 var globaleScale = 310;
-/*Ball*/
-var ballSize = 0.15;
-var xBall = 0;
-var zBall = 2;
-var ballScaler = 1; //experimental.
 /*Padel*/
 var padelSpeed = 0.2;
-var padelHeigth = 0.2;
+var padelHeight = 0.2;
 var padelWidth = 1;
 var xPadelPlayer = 0;
 var zPadel = 2;
 var xAntagonist = 0;
 var zAntagonist = 21;
+/*Ball*/
+var ballSize = 0.15;
+var xBall = 0;
+var zBall = zPadel;
+var zBallPvp = zAntagonist;
+var ballScaler = 1; //experimental.
 /*Screen Space*/
 var MID_WIDTH = canvas.width / 2;
+var MID_WIDTHPvp = (canvas.width / 4) * 3;
 var MID_HEIGHT = canvas.height / 2;
 /*Model Space*/
 var grid3D = [];
@@ -51,6 +54,9 @@ var lastTime = 0;
 var deltaTime = 0;
 var primeDeltaTime = 17;
 var skipFirstCall = 0;
+/*----PvpRotation----*/
+var cosPvp = Math.cos(Math.PI);
+var sinPvp = Math.sin(Math.PI);
 
 /*-----------Functions----------*/
 /*Display*/
@@ -145,10 +151,10 @@ function make3Dgrid()
 
 function create3Dpadel()
 {
-	padel3D.push({x: -padelWidth, y: padelHeigth});
-	padel3D.push({x: padelWidth, y: padelHeigth});
-	padel3D.push({x: -padelWidth, y: -padelHeigth});
-	padel3D.push({x: padelWidth, y: -padelHeigth});
+	padel3D.push({x: -padelWidth, y: padelHeight});
+	padel3D.push({x: padelWidth, y: padelHeight});
+	padel3D.push({x: -padelWidth, y: -padelHeight});
+	padel3D.push({x: padelWidth, y: -padelHeight});
 }
 
 function create3Dball()
@@ -164,7 +170,7 @@ function create3Dball()
 }
 
 /*Projection*/
-function projectBallLine(i, j)
+function projectBallLine(i, j, xB, zB, xOff)
 {
 	let x= 0;
 	let y = 0;
@@ -173,13 +179,13 @@ function projectBallLine(i, j)
 	let x1 = 0;
 	let y1 = 0;
 
-	x = ((ball3D[i].x + xBall) / (ball3D[i].z + zBall + zGridOffset)) * globaleScale;
-	y = ((ball3D[i].y + yGridOffset - 0.15) / (ball3D[i].z + zBall + zGridOffset)) * globaleScale;
-	x0 = Math.floor(x + MID_WIDTH);
+	x = ((ball3D[i].x + xB) / (ball3D[i].z + zB + zGridOffset)) * globaleScale;
+	y = ((ball3D[i].y + yGridOffset - ballSize) / (ball3D[i].z + zB + zGridOffset)) * globaleScale;
+	x0 = Math.floor(x + xOff);
 	y0 = Math.floor(y + MID_HEIGHT);
-	x = ((ball3D[j].x + xBall) / (ball3D[j].z + zBall + zGridOffset)) * globaleScale;
-	y = ((ball3D[j].y + yGridOffset - 0.15) / (ball3D[j].z + zBall + zGridOffset)) * globaleScale;
-	x1 = Math.floor(x + MID_WIDTH);
+	x = ((ball3D[j].x + xB) / (ball3D[j].z + zB + zGridOffset)) * globaleScale;
+	y = ((ball3D[j].y + yGridOffset - ballSize) / (ball3D[j].z + zB + zGridOffset)) * globaleScale;
+	x1 = Math.floor(x + xOff);
 	y1 = Math.floor(y + MID_HEIGHT);
 	if ((x0 > 0 && x0 < canvas.width && y0 > 0 && y0 < canvas.height
 			&& x1 > 0 && x1 < canvas.width && y1 > 0 && y1 < canvas.height))
@@ -189,7 +195,7 @@ function projectBallLine(i, j)
 			drawLineDDA(colorBuffer, x0, y0, x1, y1, 255, 255, 255, 255);
 }
 
-function projectPadelLine(buffer, i, j, z, r, g, b, xPadel)
+function projectPadelLine(buffer, i, j, z, r, g, b, xPadel, xOff)
 {
 	let x0 = 0;
 	let y0 = 0;
@@ -199,14 +205,16 @@ function projectPadelLine(buffer, i, j, z, r, g, b, xPadel)
 	let y = 0;
 
 	x = ((padel3D[i].x + xPadel) / (z + zGridOffset)) * globaleScale;
-	y = ((padel3D[i].y + yGridOffset - 0.1) / (z + zGridOffset)) * globaleScale;
-	x0 = Math.floor(x + MID_WIDTH);
+	y = ((padel3D[i].y + yGridOffset - padelHeight) / (z + zGridOffset)) * globaleScale;
+	x0 = Math.floor(x + xOff);
 	y0 = Math.floor(y + MID_HEIGHT);
 	x = ((padel3D[j].x + xPadel) / (z + zGridOffset)) * globaleScale;
-	y = ((padel3D[j].y + yGridOffset - 0.1) / (z + zGridOffset)) * globaleScale;
-	x1 = Math.floor(x + MID_WIDTH);
+	y = ((padel3D[j].y + yGridOffset - padelHeight) / (z + zGridOffset)) * globaleScale;
+	x1 = Math.floor(x + xOff);
 	y1 = Math.floor(y + MID_HEIGHT);
-	drawLineDDA(buffer, x0, y0, x1, y1, r, g, b, 255);
+	if ((x0 > 0 && x0 < canvas.width && y0 > 0 && y0 < canvas.height
+		&& x1 > 0 && x1 < canvas.width && y1 > 0 && y1 < canvas.height))
+		drawLineDDA(buffer, x0, y0, x1, y1, r, g, b, 255);
 }
 
 /*Rotation*/
@@ -227,6 +235,31 @@ function rotateY(model, rad) {
 }
 
 /*Draw*/
+
+function create3DgridPvp()
+{
+	make3Dgrid();
+	let x0 = 0;
+	let y0 = 0;
+	let x1 = 0;
+	let y1 = 0;
+	let x = 0;
+	let y = 0;
+
+	for (i = 0; i < ZMAX * 2 + XMAX * 4 + 1; i += 2)
+	{
+		x = (grid3D[i].x / (grid3D[i].z + zGridOffset)) * globaleScale;
+		y = (yGridOffset / (grid3D[i].z + zGridOffset)) * globaleScale;
+		x0 = Math.floor(x + MID_WIDTHPvp);
+		y0 = Math.floor(y + MID_HEIGHT);
+		x = (grid3D[i + 1].x / (grid3D[i + 1].z + zGridOffset)) * globaleScale;
+		y = (yGridOffset / (grid3D[i + 1].z + zGridOffset)) * globaleScale;
+		x1 = Math.floor(x + MID_WIDTHPvp);
+		y1 = Math.floor(y + MID_HEIGHT);
+		drawLineDDA(gridColorBuffer, x0, y0, x1, y1, 75, 0, 130, 255);
+	}
+}
+
 function create3Dgrid()
 {
 	make3Dgrid();
@@ -251,49 +284,95 @@ function create3Dgrid()
 	}
 }
 
+
+function drawBallPvp()
+{
+	let x0 = 0;
+	let y0 = 0;
+	let x1 = 0;
+	let y1 = 0;
+	rotateY(ball3D, xBall * deltaTime);
+	projectBallLine(0, 1, xBall, zBallPvp, MID_WIDTHPvp);
+	projectBallLine(1, 2, xBall, zBallPvp, MID_WIDTHPvp);
+	projectBallLine(2, 3, xBall, zBallPvp, MID_WIDTHPvp);
+	projectBallLine(3, 0, xBall, zBallPvp, MID_WIDTHPvp);
+
+	projectBallLine(4, 5, xBall, zBallPvp, MID_WIDTHPvp);
+	projectBallLine(5, 6, xBall, zBallPvp, MID_WIDTHPvp);
+	projectBallLine(6, 7, xBall, zBallPvp, MID_WIDTHPvp);
+	projectBallLine(7, 4, xBall, zBallPvp, MID_WIDTHPvp);
+	
+	projectBallLine(4, 0, xBall, zBallPvp, MID_WIDTHPvp);
+	projectBallLine(5, 1, xBall, zBallPvp, MID_WIDTHPvp);
+	projectBallLine(6, 2, xBall, zBallPvp, MID_WIDTHPvp);
+	projectBallLine(7, 3, xBall, zBallPvp, MID_WIDTHPvp);
+}
+
 function drawBall()
 {
 	let x0 = 0;
 	let y0 = 0;
 	let x1 = 0;
 	let y1 = 0;
-	rotateY(ball3D, 0.1);
-	projectBallLine(0, 1);
-	projectBallLine(1, 2);
-	projectBallLine(2, 3);
-	projectBallLine(3, 0);
+	rotateY(ball3D, xBall * deltaTime);
+	projectBallLine(0, 1, xBall, zBall, MID_WIDTH);
+	projectBallLine(1, 2, xBall, zBall, MID_WIDTH);
+	projectBallLine(2, 3, xBall, zBall, MID_WIDTH);
+	projectBallLine(3, 0, xBall, zBall, MID_WIDTH);
 
-	projectBallLine(4, 5);
-	projectBallLine(5, 6);
-	projectBallLine(6, 7);
-	projectBallLine(7, 4);
+	projectBallLine(4, 5, xBall, zBall, MID_WIDTH);
+	projectBallLine(5, 6, xBall, zBall, MID_WIDTH);
+	projectBallLine(6, 7, xBall, zBall, MID_WIDTH);
+	projectBallLine(7, 4, xBall, zBall, MID_WIDTH);
 	
-	projectBallLine(4, 0);
-	projectBallLine(5, 1);
-	projectBallLine(6, 2);
-	projectBallLine(7, 3);
+	projectBallLine(4, 0, xBall, zBall, MID_WIDTH);
+	projectBallLine(5, 1, xBall, zBall, MID_WIDTH);
+	projectBallLine(6, 2, xBall, zBall, MID_WIDTH);
+	projectBallLine(7, 3, xBall, zBall, MID_WIDTH);
+}
+
+function drawAntagonistPvp(r, g, b)
+{
+
+	for (i = 0; i < 4; i += 2)
+		projectPadelLine(colorBuffer, i, i + 1, zPadel, r, g, b, xAntagonist, MID_WIDTHPvp);
+	projectPadelLine(colorBuffer, 0, 3, zPadel, r, g, b, xAntagonist, MID_WIDTHPvp);
+	projectPadelLine(colorBuffer, 1, 2, zPadel, r, g, b, xAntagonist, MID_WIDTHPvp);
+	projectPadelLine(colorBuffer, 0, 2, zPadel, r, g, b, xAntagonist, MID_WIDTHPvp);
+	projectPadelLine(colorBuffer, 1, 3, zPadel, r, g, b, xAntagonist, MID_WIDTHPvp);
+}
+
+function drawPadelPvp(r, g, b)
+{
+
+	for (i = 0; i < 4; i += 2)
+		projectPadelLine(colorBuffer, i, i + 1, zAntagonist, r, g, b, xPadelPlayer, MID_WIDTHPvp);
+	projectPadelLine(colorBuffer, 0, 3, zAntagonist, r, g, b, xPadelPlayer, MID_WIDTHPvp);
+	projectPadelLine(colorBuffer, 1, 2, zAntagonist, r, g, b, xPadelPlayer, MID_WIDTHPvp);
+	projectPadelLine(colorBuffer, 0, 2, zAntagonist, r, g, b, xPadelPlayer, MID_WIDTHPvp);
+	projectPadelLine(colorBuffer, 1, 3, zAntagonist, r, g, b, xPadelPlayer, MID_WIDTHPvp);
 }
 
 function drawAntagonist(r, g, b)
 {
 
 	for (i = 0; i < 4; i += 2)
-		projectPadelLine(colorBuffer, i, i + 1, zAntagonist, r, g, b, xAntagonist);
-	projectPadelLine(colorBuffer, 0, 3, zAntagonist, r, g, b, xAntagonist);
-	projectPadelLine(colorBuffer, 1, 2, zAntagonist, r, g, b, xAntagonist);
-	projectPadelLine(colorBuffer, 0, 2, zAntagonist, r, g, b, xAntagonist);
-	projectPadelLine(colorBuffer, 1, 3, zAntagonist, r, g, b, xAntagonist);
+		projectPadelLine(colorBuffer, i, i + 1, zAntagonist, r, g, b, xAntagonist, MID_WIDTH);
+	projectPadelLine(colorBuffer, 0, 3, zAntagonist, r, g, b, xAntagonist, MID_WIDTH);
+	projectPadelLine(colorBuffer, 1, 2, zAntagonist, r, g, b, xAntagonist, MID_WIDTH);
+	projectPadelLine(colorBuffer, 0, 2, zAntagonist, r, g, b, xAntagonist, MID_WIDTH);
+	projectPadelLine(colorBuffer, 1, 3, zAntagonist, r, g, b, xAntagonist, MID_WIDTH);
 }
 
 function drawPadel(r, g, b)
 {
 
 	for (i = 0; i < 4; i += 2)
-		projectPadelLine(colorBuffer, i, i + 1, zPadel, r, g, b, xPadelPlayer);
-	projectPadelLine(colorBuffer, 0, 3, zPadel, r, g, b, xPadelPlayer);
-	projectPadelLine(colorBuffer, 1, 2, zPadel, r, g, b, xPadelPlayer);
-	projectPadelLine(colorBuffer, 0, 2, zPadel, r, g, b, xPadelPlayer);
-	projectPadelLine(colorBuffer, 1, 3, zPadel, r, g, b, xPadelPlayer);
+		projectPadelLine(colorBuffer, i, i + 1, zPadel, r, g, b, xPadelPlayer, MID_WIDTH);
+	projectPadelLine(colorBuffer, 0, 3, zPadel, r, g, b, xPadelPlayer, MID_WIDTH);
+	projectPadelLine(colorBuffer, 1, 2, zPadel, r, g, b, xPadelPlayer, MID_WIDTH);
+	projectPadelLine(colorBuffer, 0, 2, zPadel, r, g, b, xPadelPlayer, MID_WIDTH);
+	projectPadelLine(colorBuffer, 1, 3, zPadel, r, g, b, xPadelPlayer, MID_WIDTH);
 }
 
 /*Position Update*/
@@ -310,10 +389,15 @@ function updateBallPosition()
 	if (xBall < XMIN)
 		xBall = XMIN;
     zBall += zVelocity;
+	zBallPvp -= zVelocity;
 	if (zBall > ZMAX)
 		zBall = ZMAX;
 	if (zBall < ZMIN)
-		zBall = ZMIN;
+		zBall = ZMIN;	
+	if (zBallPvp > ZMAX)
+		zBallPvp = ZMAX;
+	if (zBallPvp < ZMIN)
+		zBallPvp = ZMIN;
 
     // Vérifier les limites du terrain sur l'axe X
     if (xBall <= XMIN || xBall >= XMAX) {
@@ -378,6 +462,19 @@ function updatePaddlePosition()
     }
 }
 
+
+function displayScorePvp() {
+    // Définir la police et l'alignement pour le score
+    context.font = "20px 'Press Start 2P'";// "40px Arial"; 
+    context.fillStyle = "white"; // Couleur du texte
+
+    // Afficher le score du joueur à gauche
+    context.fillText("PLAYER: " + playerScore, canvas.width / 2 - 300, 50); 
+
+    // Afficher le score de l'antagoniste à droite
+    context.fillText("ANTAGONIST : " + antagonistScore, canvas.width / 2 + 50, 50);
+}
+
 function displayScore() {
     // Définir la police et l'alignement pour le score
     context.font = "20px 'Press Start 2P'";// "40px Arial"; 
@@ -395,9 +492,6 @@ function gameLoop(currentTime)
 {
 	deltaTime = (currentTime - lastTime) / primeDeltaTime;
 	lastTime = currentTime;
-	console.log(deltaTime);
-	console.log("z " + zVelocity);
-	console.log("skip " + skipFirstCall);
 	context.clearRect(0, 0, canvas.width, canvas.height);
 	imageData = context.createImageData(canvas.width, canvas.height);
 	colorBuffer = imageData.data;
@@ -408,24 +502,81 @@ function gameLoop(currentTime)
 	drawBall();
 	drawPadel(255, 255, 255);
 	context.putImageData(imageData, 0, 0);
-	displayScore();	
+	displayScore();
 	requestAnimationFrame(gameLoop);
+}
+
+function gameLoopPvp(currentTime)
+{
+	deltaTime = (currentTime - lastTime) / primeDeltaTime;
+	lastTime = currentTime;
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	imageData = context.createImageData(canvas.width, canvas.height);
+	colorBuffer = imageData.data;
+	colorBuffer.set(gridColorBuffer);
+	updatePaddlePosition();
+	updateBallPosition();
+	/*Player*/
+	drawAntagonist(255, 255, 255);
+	drawBall();
+	drawPadel(255, 255, 255);
+	/*Antagoniste*/	
+	drawAntagonistPvp(255, 255, 255);
+	drawBallPvp();
+	drawPadelPvp(255, 255, 255);
+	context.putImageData(imageData, 0, 0);
+	displayScorePvp();	
+	requestAnimationFrame(gameLoopPvp);
+}
+
+/*initDeltaTime*/
+
+function initDeltaTimePvp(currentTime)
+{
+	++skipFirstCall;
+	lastTime = currentTime;
+	if (skipFirstCall < 2)
+		requestAnimationFrame(initDeltaTimePvp);
+	else
+		requestAnimationFrame(gameLoopPvp);
 }
 
 function initDeltaTime(currentTime)
 {
 	++skipFirstCall;
 	lastTime = currentTime;
-	if (skipFirstCall < 4)
+	if (skipFirstCall < 2)
 		requestAnimationFrame(initDeltaTime);
 	else
 		requestAnimationFrame(gameLoop);
 }
 
+/*Remove nodes*/
+
+function rmStartNode()
+{
+	create3Dgrid();
+	create3Dpadel();
+	create3Dball();
+	bot.remove();
+	pvp.remove();
+	initDeltaTime();
+}
+
+function rmStartNodePvp()
+{
+	globaleScale /= 2;
+	zGridOffset /= 1.65; 
+	MID_WIDTH /= 2;
+	create3Dgrid();
+	create3DgridPvp();
+	create3Dpadel();
+	create3Dball();
+	bot.remove();
+	pvp.remove();
+	initDeltaTimePvp();
+}
 /*----------Main----------*/
-create3Dgrid();
-create3Dpadel();
-create3Dball();
 // Événement keydown : ajouter la touche enfoncée
 document.addEventListener('keydown', function(event){
     keysPressed[event.key] = true;
@@ -434,4 +585,6 @@ document.addEventListener('keydown', function(event){
 document.addEventListener('keyup', function(event) {
     keysPressed[event.key] = false;
 })
-start.onclick = initDeltaTime;
+bot.onclick = rmStartNode;
+pvp.onclick = rmStartNodePvp;
+
