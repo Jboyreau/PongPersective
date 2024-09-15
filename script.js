@@ -565,8 +565,9 @@ function rmStartNode()
 
 function rmStartNodePvp()
 {
-	globaleScale /= 2;
-	zGridOffset /= 1.65; 
+	globaleScale /= 1.2;
+	zGridOffset *= 1.25;
+	yGridOffset *= 1.7;
 	MID_WIDTH /= 2;
 	create3Dgrid();
 	create3DgridPvp();
