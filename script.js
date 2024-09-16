@@ -49,14 +49,12 @@ var keysPressed = {};
 /*-----Score-----*/
 playerScore = 0;
 antagonistScore = 0;
+winerScore = 11;
 /*-----SYNC-----*/
 var lastTime = 0;
 var deltaTime = 0;
 var primeDeltaTime = 17;
 var skipFirstCall = 0;
-/*----PvpRotation----*/
-var cosPvp = Math.cos(Math.PI);
-var sinPvp = Math.sin(Math.PI);
 
 /*-----------Functions----------*/
 /*Display*/
@@ -170,7 +168,7 @@ function create3Dball()
 }
 
 /*Projection*/
-function projectBallLine(i, j, xB, zB, xOff)
+function projectBallLine(i, j, xB, zB, xOff, r, g , b)
 {
 	let x= 0;
 	let y = 0;
@@ -189,10 +187,7 @@ function projectBallLine(i, j, xB, zB, xOff)
 	y1 = Math.floor(y + MID_HEIGHT);
 	if ((x0 > 0 && x0 < canvas.width && y0 > 0 && y0 < canvas.height
 			&& x1 > 0 && x1 < canvas.width && y1 > 0 && y1 < canvas.height))
-		if (zBall < ZMIN + 1 || zBall > ZMAX - 1)
-			drawLineDDA(colorBuffer, x0, y0, x1, y1, 255, 0, 0, 255);
-		else
-			drawLineDDA(colorBuffer, x0, y0, x1, y1, 255, 255, 255, 255);
+			drawLineDDA(colorBuffer, x0, y0, x1, y1, r, g , b, 255);
 }
 
 function projectPadelLine(buffer, i, j, z, r, g, b, xPadel, xOff)
@@ -291,21 +286,31 @@ function drawBallPvp()
 	let y0 = 0;
 	let x1 = 0;
 	let y1 = 0;
-	rotateY(ball3D, xBall * deltaTime);
-	projectBallLine(0, 1, xBall, zBallPvp, MID_WIDTHPvp);
-	projectBallLine(1, 2, xBall, zBallPvp, MID_WIDTHPvp);
-	projectBallLine(2, 3, xBall, zBallPvp, MID_WIDTHPvp);
-	projectBallLine(3, 0, xBall, zBallPvp, MID_WIDTHPvp);
-
-	projectBallLine(4, 5, xBall, zBallPvp, MID_WIDTHPvp);
-	projectBallLine(5, 6, xBall, zBallPvp, MID_WIDTHPvp);
-	projectBallLine(6, 7, xBall, zBallPvp, MID_WIDTHPvp);
-	projectBallLine(7, 4, xBall, zBallPvp, MID_WIDTHPvp);
+	let r = 255;
+	let g = 255;
+	let b = 255;
 	
-	projectBallLine(4, 0, xBall, zBallPvp, MID_WIDTHPvp);
-	projectBallLine(5, 1, xBall, zBallPvp, MID_WIDTHPvp);
-	projectBallLine(6, 2, xBall, zBallPvp, MID_WIDTHPvp);
-	projectBallLine(7, 3, xBall, zBallPvp, MID_WIDTHPvp);
+	if (zBall <= ZMIN || zBall >= ZMAX)
+	{
+		r = 255;
+		g = 0;
+		b = 0;
+	}
+	rotateY(ball3D, xBall * deltaTime);
+	projectBallLine(0, 1, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	projectBallLine(1, 2, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	projectBallLine(2, 3, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	projectBallLine(3, 0, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+
+	projectBallLine(4, 5, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	projectBallLine(5, 6, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	projectBallLine(6, 7, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	projectBallLine(7, 4, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	
+	projectBallLine(4, 0, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	projectBallLine(5, 1, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	projectBallLine(6, 2, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
+	projectBallLine(7, 3, xBall, zBallPvp, MID_WIDTHPvp, r, g , b);
 }
 
 function drawBall()
@@ -314,21 +319,32 @@ function drawBall()
 	let y0 = 0;
 	let x1 = 0;
 	let y1 = 0;
-	rotateY(ball3D, xBall * deltaTime);
-	projectBallLine(0, 1, xBall, zBall, MID_WIDTH);
-	projectBallLine(1, 2, xBall, zBall, MID_WIDTH);
-	projectBallLine(2, 3, xBall, zBall, MID_WIDTH);
-	projectBallLine(3, 0, xBall, zBall, MID_WIDTH);
-
-	projectBallLine(4, 5, xBall, zBall, MID_WIDTH);
-	projectBallLine(5, 6, xBall, zBall, MID_WIDTH);
-	projectBallLine(6, 7, xBall, zBall, MID_WIDTH);
-	projectBallLine(7, 4, xBall, zBall, MID_WIDTH);
+	let r = 255;
+	let g = 255;
+	let b = 255;
 	
-	projectBallLine(4, 0, xBall, zBall, MID_WIDTH);
-	projectBallLine(5, 1, xBall, zBall, MID_WIDTH);
-	projectBallLine(6, 2, xBall, zBall, MID_WIDTH);
-	projectBallLine(7, 3, xBall, zBall, MID_WIDTH);
+	if (zBall <= ZMIN || zBall >= ZMAX)
+	{
+		r = 255;
+		g = 0;
+		b = 0;
+		b = 0;
+	}
+	rotateY(ball3D, xBall * deltaTime);
+	projectBallLine(0, 1, xBall, zBall, MID_WIDTH, r, g , b);
+	projectBallLine(1, 2, xBall, zBall, MID_WIDTH, r, g , b);
+	projectBallLine(2, 3, xBall, zBall, MID_WIDTH, r, g , b);
+	projectBallLine(3, 0, xBall, zBall, MID_WIDTH, r, g , b);
+
+	projectBallLine(4, 5, xBall, zBall, MID_WIDTH, r, g , b);
+	projectBallLine(5, 6, xBall, zBall, MID_WIDTH, r, g , b);
+	projectBallLine(6, 7, xBall, zBall, MID_WIDTH, r, g , b);
+	projectBallLine(7, 4, xBall, zBall, MID_WIDTH, r, g , b);
+	
+	projectBallLine(4, 0, xBall, zBall, MID_WIDTH, r, g , b);
+	projectBallLine(5, 1, xBall, zBall, MID_WIDTH, r, g , b);
+	projectBallLine(6, 2, xBall, zBall, MID_WIDTH, r, g , b);
+	projectBallLine(7, 3, xBall, zBall, MID_WIDTH, r, g , b);
 }
 
 function drawAntagonistPvp(r, g, b)
@@ -376,7 +392,7 @@ function drawPadel(r, g, b)
 }
 
 /*Position Update*/
-function updateBallPosition()
+function updateBallPosition(rebound)
 {	
 	if (zVelocity > 0)
 		zVelocity = ballSpeed * deltaTime;
@@ -390,14 +406,14 @@ function updateBallPosition()
 		xBall = XMIN;
     zBall += zVelocity;
 	zBallPvp -= zVelocity;
-	if (zBall > ZMAX)
-		zBall = ZMAX;
-	if (zBall < ZMIN)
-		zBall = ZMIN;	
-	if (zBallPvp > ZMAX)
-		zBallPvp = ZMAX;
-	if (zBallPvp < ZMIN)
-		zBallPvp = ZMIN;
+	if (zBall > ZMAX + 0.5)
+		zBall = ZMAX + 0.5;
+	if (zBall < ZMIN - 0.5)
+		zBall = ZMIN - 0.5;	
+	if (zBallPvp > ZMAX + 0.5)
+		zBallPvp = ZMAX + 0.5;
+	if (zBallPvp < ZMIN - 0.5)
+		zBallPvp = ZMIN - 0.5;
 
     // Vérifier les limites du terrain sur l'axe X
     if (xBall <= XMIN || xBall >= XMAX) {
@@ -406,15 +422,15 @@ function updateBallPosition()
     }
 
     // Vérifier les limites du terrain sur l'axe Z
-    if (zBall >= ZMAX || zBall <= ZMIN)
+    if (zBall >= ZMAX + 0.5 || zBall <= ZMIN - 0.5)
 	{
         // Inverser la direction sur Z si on atteint les bords arrière	
 		playerScore += 1 * (zVelocity > 0);
 		antagonistScore += 1 * (zVelocity < 0);
-        zVelocity = -zVelocity;
+		zVelocity = -zVelocity;
 		xVelocity /= 5;
     }
-    if (zBall <= zPadel && zBall >= ZMIN && zVelocity < 0)//Collision avec le paddle joueur
+    else if (zBall <= zPadel && zBall >= ZMIN + 0.5 && zVelocity < 0)//Collision avec le paddle joueur
 	{
         if ((xBall > xPadelPlayer - padelWidth || xBall + ballSize > xPadelPlayer - padelWidth)
 			&& (xBall < xPadelPlayer + padelWidth || xBall - ballSize < xPadelPlayer + padelWidth))
@@ -425,7 +441,7 @@ function updateBallPosition()
             xVelocity = ((xBall - xPadelPlayer) / 4) * deltaTime;
         }
     }
-    if (zBall >= zAntagonist && zBall <= ZMAX && zVelocity > 0)//Collision avec l'Antagoniste
+    else if (zBall >= zAntagonist && zBall <= ZMAX - 0.5 && zVelocity > 0)//Collision avec l'Antagoniste
 	{
 		if ((xBall > xAntagonist - padelWidth || xBall + ballSize > xAntagonist - padelWidth)
 			&& (xBall < xAntagonist + padelWidth || xBall - ballSize < xAntagonist + padelWidth))
@@ -433,7 +449,7 @@ function updateBallPosition()
             //Inverser la direction sur Z si la balle touche le paddle
             zVelocity = -zVelocity;
 			//Controle du rebond sur le padel
-            xVelocity = ((xBall - xAntagonist) / 2) * deltaTime;
+            xVelocity = ((xBall - xAntagonist) / rebound) * deltaTime;
         }
 	}
 }
@@ -462,6 +478,29 @@ function updatePaddlePosition()
     }
 }
 
+function updatePaddlePositionPvp()
+{
+	if (keysPressed["ArrowLeft"])
+	{
+        xAntagonist -= padelSpeed * deltaTime;
+        if (xAntagonist < XMIN - 1) xAntagonist = XMIN - 1;
+    }
+    if (keysPressed["ArrowRight"])
+	{
+        xAntagonist += padelSpeed * deltaTime;
+        if (xAntagonist > XMAX + 1) xAntagonist = XMAX + 1;
+    }
+    if (keysPressed["t"])
+	{
+        xPadelPlayer -= padelSpeed * deltaTime;
+        if (xPadelPlayer < XMIN - 1) xPadelPlayer = XMIN - 1;
+    }
+    if (keysPressed["y"])
+	{
+        xPadelPlayer += padelSpeed * deltaTime;
+        if (xPadelPlayer > XMAX + 1) xPadelPlayer = XMAX + 1;
+    }
+}
 
 function displayScorePvp() {
     // Définir la police et l'alignement pour le score
@@ -487,6 +526,18 @@ function displayScore() {
     context.fillText("ANTAGONIST : " + antagonistScore, MID_WIDTH + 50, 50);
 }
 
+function displayResult() {
+    // Définir la police et l'alignement pour le score
+    context.font = "20px 'Press Start 2P'";// "40px Arial"; 
+    context.fillStyle = "white"; // Couleur du texte
+
+    // Afficher le gagnant.
+	if (playerScore > antagonistScore)
+		context.fillText("PLAYER Won!", MID_WIDTH, 50);
+	else
+		context.fillText("ANTAGONIST Won!", MID_WIDTH, 50);
+}
+
 /*Game loop*/
 function gameLoop(currentTime)
 {
@@ -497,13 +548,18 @@ function gameLoop(currentTime)
 	colorBuffer = imageData.data;
 	colorBuffer.set(gridColorBuffer);
 	updatePaddlePosition();
-	updateBallPosition();
+	updateBallPosition(2.5);
 	drawAntagonist(255, 255, 255);
 	drawBall();
 	drawPadel(255, 255, 255);
 	context.putImageData(imageData, 0, 0);
-	displayScore();
-	requestAnimationFrame(gameLoop);
+	if (antagonistScore != winerScore && playerScore != winerScore)
+	{
+		displayScore();
+		requestAnimationFrame(gameLoop);
+	}
+	else
+		displayResult();
 }
 
 function gameLoopPvp(currentTime)
@@ -514,8 +570,8 @@ function gameLoopPvp(currentTime)
 	imageData = context.createImageData(canvas.width, canvas.height);
 	colorBuffer = imageData.data;
 	colorBuffer.set(gridColorBuffer);
-	updatePaddlePosition();
-	updateBallPosition();
+	updatePaddlePositionPvp();
+	updateBallPosition(4);
 	/*Player*/
 	drawAntagonist(255, 255, 255);
 	drawBall();
@@ -525,8 +581,13 @@ function gameLoopPvp(currentTime)
 	drawBallPvp();
 	drawPadelPvp(255, 255, 255);
 	context.putImageData(imageData, 0, 0);
-	displayScorePvp();	
-	requestAnimationFrame(gameLoopPvp);
+	if (antagonistScore != winerScore && playerScore != winerScore)
+	{
+		displayScorePvp();
+		requestAnimationFrame(gameLoopPvp);
+	}
+	else
+		displayResult();
 }
 
 /*initDeltaTime*/
