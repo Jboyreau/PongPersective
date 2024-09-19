@@ -23,9 +23,26 @@ body
 
 #canvas-id
 {
-	background-color : black;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
 }
 
+/* Boutons centrés en dessous du canvas */
+#buttons-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 520px;
+}
+
+#canvas-2d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    pointer-events: none; /* Le texte n'empêche pas l'interaction avec le canevas 3D */
+}
 @font-face {
     font-family: 'Press Start 2P';
     src: url('fonts/PressStart2P-Regular.ttf') format('truetype');

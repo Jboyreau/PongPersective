@@ -1,11 +1,61 @@
 /*-----2D-----*/
 var bot = document.getElementById("bot-id");
 var pvp = document.getElementById("pvp-id");
-var canvas = document.getElementById("canvas-id");
-var context = canvas.getContext("2d");
-var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-var colorBuffer = imageData.data;
-var gridColorBuffer = new Uint8ClampedArray(canvas.width * canvas.height * 4);
+
+// Obtenez votre canvas
+const canvas = document.getElementById("canvas-id");
+const canvas_ = document.getElementById("canvas-2d");
+const cont = canvas_.getContext("2d");
+
+/***************************************************************************************/
+// Initialisez le renderer avec le canvas
+const renderer = new THREE.WebGLRenderer({ canvas });
+renderer.setSize(canvas.width, canvas.height);
+
+// Création des buffers
+const colorBuffer = new Uint8Array(canvas.width * canvas.height * 4);
+const gridColorBuffer = new Uint8ClampedArray(canvas.width * canvas.height * 4);
+
+// Création des textures à partir des buffers
+const colorTexture = new THREE.DataTexture(colorBuffer, canvas.width, canvas.height, THREE.RGBAFormat);
+const gridTexture = new THREE.DataTexture(gridColorBuffer, canvas.width, canvas.height, THREE.RGBAFormat);
+colorTexture.needsUpdate = true;
+gridTexture.needsUpdate = true;
+
+// ShaderMaterial pour afficher le buffer colorBuffer
+const material = new THREE.ShaderMaterial({
+    uniforms: {
+        colorMap: { value: colorTexture }, // Renommé en 'colorMap'
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D colorMap; // Utilisation de 'colorMap' au lieu de 'texture'
+      varying vec2 vUv;
+      void main() {
+        gl_FragColor = texture(colorMap, vUv); // Utilisation de 'colorMap'
+      }
+    `
+});
+
+// Création d'une géométrie pleine écran
+const geometry = new THREE.PlaneGeometry(2, 2);
+const mesh = new THREE.Mesh(geometry, material);
+mesh.rotation.z = Math.PI;
+
+// Création d'une scène et ajout du mesh
+const scene = new THREE.Scene();
+scene.add(mesh);
+
+// Ajout d'une caméra orthographique (pleine écran)
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+/***************************************************************************************/
 var BUFFER_SIZE = canvas.width * canvas.height * 4;
 var RED_SIDE_SIZE = canvas.width / 2;
 var GREEN_SIDE_SIZE = canvas.width;
@@ -468,12 +518,12 @@ function updatePaddlePosition()
 	}
     if (keysPressed["ArrowLeft"])
 	{
-        xPadelPlayer -= padelSpeed * deltaTime;
+        xPadelPlayer += padelSpeed * deltaTime;
         if (xPadelPlayer < XMIN - 1) xPadelPlayer = XMIN - 1;
     }
     if (keysPressed["ArrowRight"])
 	{
-        xPadelPlayer += padelSpeed * deltaTime;
+        xPadelPlayer -= padelSpeed * deltaTime;
         if (xPadelPlayer > XMAX + 1) xPadelPlayer = XMAX + 1;
     }
 }
@@ -482,77 +532,84 @@ function updatePaddlePositionPvp()
 {
 	if (keysPressed["ArrowLeft"])
 	{
-        xAntagonist -= padelSpeed * deltaTime;
+        xAntagonist += padelSpeed * deltaTime;
         if (xAntagonist < XMIN - 1) xAntagonist = XMIN - 1;
     }
     if (keysPressed["ArrowRight"])
 	{
-        xAntagonist += padelSpeed * deltaTime;
+        xAntagonist -= padelSpeed * deltaTime;
         if (xAntagonist > XMAX + 1) xAntagonist = XMAX + 1;
     }
     if (keysPressed["t"])
 	{
-        xPadelPlayer -= padelSpeed * deltaTime;
+        xPadelPlayer += padelSpeed * deltaTime;
         if (xPadelPlayer < XMIN - 1) xPadelPlayer = XMIN - 1;
     }
     if (keysPressed["y"])
 	{
-        xPadelPlayer += padelSpeed * deltaTime;
+        xPadelPlayer -= padelSpeed * deltaTime;
         if (xPadelPlayer > XMAX + 1) xPadelPlayer = XMAX + 1;
     }
 }
 
 function displayScorePvp() {
     // Définir la police et l'alignement pour le score
-    context.font = "20px 'Press Start 2P'";// "40px Arial"; 
-    context.fillStyle = "white"; // Couleur du texte
+    cont.font = "20px 'Press Start 2P'";// "40px Arial"; 
+    cont.fillStyle = "white"; // Couleur du texte
 
     // Afficher le score du joueur à gauche
-    context.fillText("PLAYER: " + playerScore, canvas.width / 2 - 300, 50); 
+    cont.fillText("PLAYER: " + playerScore, canvas.width / 2 - 300, 50); 
 
     // Afficher le score de l'antagoniste à droite
-    context.fillText("ANTAGONIST : " + antagonistScore, canvas.width / 2 + 50, 50);
+    cont.fillText("ANTAGONIST : " + antagonistScore, canvas.width / 2 + 50, 50);
 }
 
 function displayScore() {
     // Définir la police et l'alignement pour le score
-    context.font = "20px 'Press Start 2P'";// "40px Arial"; 
-    context.fillStyle = "white"; // Couleur du texte
+    cont.font = "20px 'Press Start 2P'";// "40px Arial"; 
+    cont.fillStyle = "white"; // Couleur du texte
 
     // Afficher le score du joueur à gauche
-    context.fillText("PLAYER : " + playerScore, MID_WIDTH - 300, 50); 
+    cont.fillText("PLAYER: " + playerScore, canvas.width / 2 - 300, 50); 
 
     // Afficher le score de l'antagoniste à droite
-    context.fillText("ANTAGONIST : " + antagonistScore, MID_WIDTH + 50, 50);
+    cont.fillText("ANTAGONIST : " + antagonistScore, canvas.width / 2 + 50, 50);
 }
 
 function displayResult() {
     // Définir la police et l'alignement pour le score
-    context.font = "20px 'Press Start 2P'";// "40px Arial"; 
-    context.fillStyle = "white"; // Couleur du texte
+    cont.font = "20px 'Press Start 2P'";// "40px Arial"; 
+    cont.fillStyle = "white"; // Couleur du texte
 
-    // Afficher le gagnant.
+    // Afficher le score du joueur à gauche
 	if (playerScore > antagonistScore)
-		context.fillText("PLAYER Won!", MID_WIDTH, 50);
+		cont.fillText("PLAYER WIN!", canvas.width / 2 - 300, 50); 
 	else
-		context.fillText("ANTAGONIST Won!", MID_WIDTH, 50);
+		cont.fillText("ANTAGONIST LOST!", canvas.width / 2 + 50, 50);
 }
 
 /*Game loop*/
 function gameLoop(currentTime)
 {
+	cont.clearRect(0, 0, canvas_.width, canvas_.height);
+	
 	deltaTime = (currentTime - lastTime) / primeDeltaTime;
 	lastTime = currentTime;
-	context.clearRect(0, 0, canvas.width, canvas.height);
-	imageData = context.createImageData(canvas.width, canvas.height);
-	colorBuffer = imageData.data;
+
+	/*map display*/	
+	renderer.clear();
 	colorBuffer.set(gridColorBuffer);
+	
 	updatePaddlePosition();
 	updateBallPosition(2.5);
 	drawAntagonist(255, 255, 255);
 	drawBall();
 	drawPadel(255, 255, 255);
-	context.putImageData(imageData, 0, 0);
+	//context.putImageData(imageData, 0, 0);
+	
+	colorTexture.needsUpdate = true;
+	renderer.render(scene, camera);
+	
 	if (antagonistScore != winerScore && playerScore != winerScore)
 	{
 		displayScore();
@@ -564,12 +621,15 @@ function gameLoop(currentTime)
 
 function gameLoopPvp(currentTime)
 {
+	cont.clearRect(0, 0, canvas_.width, canvas_.height);
+
 	deltaTime = (currentTime - lastTime) / primeDeltaTime;
 	lastTime = currentTime;
-	context.clearRect(0, 0, canvas.width, canvas.height);
-	imageData = context.createImageData(canvas.width, canvas.height);
-	colorBuffer = imageData.data;
+
+	/*map display*/	
+	renderer.clear();
 	colorBuffer.set(gridColorBuffer);
+
 	updatePaddlePositionPvp();
 	updateBallPosition(4);
 	/*Player*/
@@ -580,7 +640,11 @@ function gameLoopPvp(currentTime)
 	drawAntagonistPvp(255, 255, 255);
 	drawBallPvp();
 	drawPadelPvp(255, 255, 255);
-	context.putImageData(imageData, 0, 0);
+	
+	colorTexture.needsUpdate = true;
+	renderer.render(scene, camera);
+	
+	//context.putImageData(imageData, 0, 0);
 	if (antagonistScore != winerScore && playerScore != winerScore)
 	{
 		displayScorePvp();
