@@ -1,5 +1,7 @@
 /*-----Wave effect-----*/
-var effectEnabled = true;
+var effectEnabled = true; //true; //false;
+var lightWave = false; //true; //false;
+var lightIntensity = 1; //1;
 /*-----2D-----*/
 var bot = document.getElementById("bot-id");
 var pvp = document.getElementById("pvp-id");
@@ -24,12 +26,12 @@ const gridTexture = new THREE.DataTexture(gridColorBuffer, canvas.width, canvas.
 colorTexture.needsUpdate = true;
 gridTexture.needsUpdate = true;
 
-// ShaderMaterial pour afficher le buffer colorBuffer
 const material = new THREE.ShaderMaterial({
     uniforms: {
         colorMap: { value: colorTexture },
-        time: { value: 0.0 },// Ajout de l'uniform pour l'animation
-		effectEnabled: { value: effectEnabled }
+        time: { value: 0.0 },  // Ajout de l'uniform pour l'animation
+        effectEnabled: { value: effectEnabled }, // Pour activer ou désactiver l'effet de vagues
+        lightIntensity: { value: lightIntensity } // Uniform pour la brillance
     },
     vertexShader: `
       varying vec2 vUv;
@@ -40,18 +42,26 @@ const material = new THREE.ShaderMaterial({
     `,
     fragmentShader: `
       uniform sampler2D colorMap;
-	  uniform bool effectEnabled; // Uniform pour activer ou désactiver
+      uniform bool effectEnabled; // Uniform pour activer ou désactiver l'effet de vagues
       uniform float time; // Uniform pour le temps
+      uniform float lightIntensity; // Uniform pour simuler la brillance
       varying vec2 vUv;
+
       void main() {
         vec2 uv = vUv;
 
         // Ajout d'une distorsion dynamique
-		if (effectEnabled) {
-			uv.x += sin(uv.y * 10.0 + time * 5.0) * 0.02; // Déplacement en vague sur l'axe X
-			uv.y += sin(uv.x * 10.0 + time * 3.0) * 0.02; // Déplacement en vague sur l'axe Y
-		}
-        gl_FragColor = texture(colorMap, uv);
+        if (effectEnabled) {
+          uv.x += sin(uv.y * 10.0 + time * 5.0) * 0.02; // Déplacement en vague sur l'axe X
+          uv.y += sin(uv.x * 10.0 + time * 3.0) * 0.02; // Déplacement en vague sur l'axe Y
+        }
+
+        vec4 color = texture(colorMap, uv);
+
+        // Simuler la brillance en augmentant l'intensité lumineuse
+        color.rgb *= lightIntensity;
+
+        gl_FragColor = color;
       }
     `
 });
@@ -600,7 +610,6 @@ function displayResult() {
 	else
 		cont.fillText("ANTAGONIST LOST!", canvas.width / 2 + 50, 50);
 }
-
 /*Game loop*/
 function gameLoop(currentTime)
 {
@@ -621,6 +630,8 @@ function gameLoop(currentTime)
 	//context.putImageData(imageData, 0, 0);
 	
 	material.uniforms.time.value = currentTime * 0.001;
+	if (lightWave)
+		material.uniforms.lightIntensity.value =  2 + 0.5 * Math.sin(currentTime * 0.002);
 	colorTexture.needsUpdate = true;
 	renderer.render(scene, camera);
 	
@@ -656,6 +667,8 @@ function gameLoopPvp(currentTime)
 	drawPadelPvp(255, 255, 255);
 	
 	material.uniforms.time.value = currentTime * 0.001;
+	if (lightWave)
+		material.uniforms.lightIntensity.value =  2 + 0.5 * Math.sin(currentTime * 0.002);
 	colorTexture.needsUpdate = true;
 	renderer.render(scene, camera);
 	
