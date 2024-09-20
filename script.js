@@ -1,3 +1,5 @@
+/*-----Wave effect-----*/
+var effectEnabled = true;
 /*-----2D-----*/
 var bot = document.getElementById("bot-id");
 var pvp = document.getElementById("pvp-id");
@@ -25,7 +27,9 @@ gridTexture.needsUpdate = true;
 // ShaderMaterial pour afficher le buffer colorBuffer
 const material = new THREE.ShaderMaterial({
     uniforms: {
-        colorMap: { value: colorTexture }, // Renommé en 'colorMap'
+        colorMap: { value: colorTexture },
+        time: { value: 0.0 },// Ajout de l'uniform pour l'animation
+		effectEnabled: { value: effectEnabled }
     },
     vertexShader: `
       varying vec2 vUv;
@@ -35,10 +39,19 @@ const material = new THREE.ShaderMaterial({
       }
     `,
     fragmentShader: `
-      uniform sampler2D colorMap; // Utilisation de 'colorMap' au lieu de 'texture'
+      uniform sampler2D colorMap;
+	  uniform bool effectEnabled; // Uniform pour activer ou désactiver
+      uniform float time; // Uniform pour le temps
       varying vec2 vUv;
       void main() {
-        gl_FragColor = texture(colorMap, vUv); // Utilisation de 'colorMap'
+        vec2 uv = vUv;
+
+        // Ajout d'une distorsion dynamique
+		if (effectEnabled) {
+			uv.x += sin(uv.y * 10.0 + time * 5.0) * 0.02; // Déplacement en vague sur l'axe X
+			uv.y += sin(uv.x * 10.0 + time * 3.0) * 0.02; // Déplacement en vague sur l'axe Y
+		}
+        gl_FragColor = texture(colorMap, uv);
       }
     `
 });
@@ -607,6 +620,7 @@ function gameLoop(currentTime)
 	drawPadel(255, 255, 255);
 	//context.putImageData(imageData, 0, 0);
 	
+	material.uniforms.time.value = currentTime * 0.001;
 	colorTexture.needsUpdate = true;
 	renderer.render(scene, camera);
 	
@@ -641,6 +655,7 @@ function gameLoopPvp(currentTime)
 	drawBallPvp();
 	drawPadelPvp(255, 255, 255);
 	
+	material.uniforms.time.value = currentTime * 0.001;
 	colorTexture.needsUpdate = true;
 	renderer.render(scene, camera);
 	
